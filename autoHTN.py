@@ -32,16 +32,19 @@ def declare_methods (data):
 
 def make_operator (rule):
 	def operator (state, ID):
+		# your code here
 		pass
 	return operator
 
 def declare_operators (data):
 	# your code here
+	operators = []
 	recipes =  data["Recipes"]
 	for recipe_name in recipes:
 		items = recipes[recipe_name]
-		make_operator(items)
+		operators.append(make_operator(items))
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
+	pyhop.declare_operators(operators)
 	pass
 
 def add_heuristic (data, ID):
