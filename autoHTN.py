@@ -16,33 +16,80 @@ def produce (state, ID, item):
 pyhop.declare_methods ('produce', produce)
 
 def make_method (name, rule):
+	#print(f"name: {name}, rule: {rule}")
 	def method (state, ID):
-		# your code here
 		pass
-
+	#method.__name__ = f"op_{name.replace(' ', '_')}"
 	return method
 
 def declare_methods (data):
 	# some recipes are faster than others for the same product even though they might require extra tools
 	# sort the recipes so that faster recipes go first
+	recipes = data["Recipes"]
+
+	product_recipes = {}
+	for value in recipes.values():
+		product = list(value["Produces"])[0]
+		if product in product_recipes:
+			product_recipes[product].append(value)
+		else:
+			product_recipes[product] = [value]
+
+	methods = []
+	for key, value in product_recipes.items():
+		print(f"key: {key}, value: {value}")
+	#print(data)
+	#for key, value in recipes.items():
+	#	methods.append(make_method(key, value))
+	#pyhop.declare_methods(*methods)
 
 	# your code here
 	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)	
 	pass			
 
 def make_operator (rule):
+	name = rule[0]
+	recipe = rule[1]
+
+	requires = recipe.get("Requires")
+	produces = recipe.get("Produces")
+	consumes = recipe.get("Consumes")
 	def operator (state, ID):
-		pass
+		time = recipe["Time"]
+		if state.time < time:
+			return False
+		state.time -= time
+
+		if requires:
+			for item, amount_needed in requires.items():
+				curr_requirement_count = getattr(state, item, 0)[ID]
+				if curr_requirement_count < amount_needed:
+					return False
+
+		if produces:
+			for item, amount_needed in produces.items():
+				current_amount = getattr(state, item, 0)[ID]
+				setattr(state, item, {ID: current_amount + amount_needed})
+
+		if consumes:
+			for item, amount_needed in consumes.items():
+				current_amount = getattr(state, item, None)[ID]
+				if current_amount is None or current_amount > amount_needed:
+					return False
+				setattr(state, item, {ID: current_amount - amount_needed})
+
+		return state
+
+	operator.__name__ = f"op_{name.replace(' ', '_')}"
 	return operator
 
 def declare_operators (data):
-	# your code here
-	recipes =  data["Recipes"]
-	for recipe_name in recipes:
-		items = recipes[recipe_name]
-		make_operator(items)
+	operators = []
+	recipes = data["Recipes"]
+	for item in recipes.items():
+		operators.append(make_operator(item))
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
-	pass
+	pyhop.declare_operators(*operators)
 
 def add_heuristic (data, ID):
 	# prune search branch if heuristic() returns True
