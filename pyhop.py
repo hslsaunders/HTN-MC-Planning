@@ -230,6 +230,7 @@ def seek_plan(state,tasks,plan,depth,verbose=0,calling_stack=[]):
             print('depth {} new state:'.format(depth))
             print_state(newstate)
         if newstate:
+            print(f"paring {task1}, adding task to plan")
             solution = seek_plan(newstate,tasks[1:],plan+[task1],depth+1,verbose,calling_stack)
             if solution != False:
                 return solution
@@ -243,12 +244,17 @@ def seek_plan(state,tasks,plan,depth,verbose=0,calling_stack=[]):
     if task1[0] in methods:
         if verbose>2: print('depth {} method instance {}'.format(depth,task1))
         relevant = methods[task1[0]]
+        print(f"relevant:")
+        for method in relevant:
+            print(f"\trelevant method: {method.__name__}")
+
         for method in relevant:
             subtasks = method(state,*task1[1:])
             # Can't just say "if subtasks:", because that's wrong if subtasks == []
             if verbose>2:
                 print('depth {} new tasks: {}'.format(depth,subtasks))
             if subtasks != False:
+                print(f"adding {tasks[1:]} to subtasks {subtasks}, adding {task1} to calling stack {calling_stack}")
                 solution = seek_plan(state,subtasks+tasks[1:],plan,depth+1,verbose,calling_stack+[task1])
                 if solution != False:
                     return solution

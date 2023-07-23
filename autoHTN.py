@@ -79,9 +79,9 @@ def make_operator (rule):
 	consumes = recipe.get("Consumes")
 	def operator (state, ID):
 		time = recipe["Time"]
-		if state.time < time:
+		if state.time[ID] < time:
 			return False
-		state.time -= time
+		state.time = {ID: state.time[ID] - time}
 
 		if requires:
 			for item, amount_needed in requires.items():
@@ -117,8 +117,24 @@ def add_heuristic (data, ID):
 	# prune search branch if heuristic() returns True
 	# do not change parameters to heuristic(), but can add more heuristic functions with the same parameters: 
 	# e.g. def heuristic2(...); pyhop.add_check(heuristic2)
+
+	tools = data["Tools"]
+
 	def heuristic (state, curr_task, tasks, plan, depth, calling_stack):
-		# your code here
+		method = curr_task[0]
+		#print(f"current task: {curr_task}")
+		print(f"current task: {curr_task}, calling stack: {calling_stack}")
+		#print(f"tasks: {tasks}")
+		#print(f"plan: {plan}")
+		#print(f"method: {method}")
+		if curr_task in calling_stack[1:] and method == "have_enough":
+			print(f"\nreturning true because {curr_task} in calling stack\n")
+			return True
+		#if method == "produce":
+		#	item = curr_task[2]
+		#	if item in tools:
+		#		return True
+
 		return False # if True, prune this branch
 
 	pyhop.add_check(heuristic)
