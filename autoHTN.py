@@ -18,8 +18,23 @@ pyhop.declare_methods ('produce', produce)
 def make_method (name, rule):
 	#print(f"name: {name}, rule: {rule}")
 	def method (state, ID):
-		pass
-	#method.__name__ = f"op_{name.replace(' ', '_')}"
+		method_list = []
+		operation = f"op_{name.replace(' ', '_')}"
+
+		requires = rule.get("Requires")
+		if requires:
+			requirement, amount = list(requires.items())[0]
+			method_list.append(("have_enough", ID, requirement, amount))
+
+		consumes = rule.get("Consumes")
+		if consumes:
+			for item, amount in consumes.items():
+				method_list.append(("have_enough", ID, item, amount))
+
+		method_list.append((operation, ID))
+		return method_list
+
+	method.__name__ = f"{name.replace(' ', '_')}"
 	return method
 
 def declare_methods (data):
@@ -28,24 +43,32 @@ def declare_methods (data):
 	recipes = data["Recipes"]
 
 	product_recipes = {}
-	for value in recipes.values():
+	for key, value in recipes.items():
 		product = list(value["Produces"])[0]
 		if product in product_recipes:
-			product_recipes[product].append(value)
+			product_recipes[product].append((key, value))
 		else:
-			product_recipes[product] = [value]
+			product_recipes[product] = [(key, value)]
 
-	methods = []
-	for key, value in product_recipes.items():
-		print(f"key: {key}, value: {value}")
+	for product, recipeList in product_recipes.items():
+		methods = []
+		times = {}
+		for recipe in recipeList:
+			time = recipe[1]["Time"]
+			method = make_method(recipe[0], recipe[1])
+			methods.append(method)
+			times[method] = time
+
+		methods.sort(key=lambda x: times[x])
+
+		pyhop.declare_methods(f"produce_{product}", *methods)
 	#print(data)
 	#for key, value in recipes.items():
 	#	methods.append(make_method(key, value))
 	#pyhop.declare_methods(*methods)
 
 	# your code here
-	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)	
-	pass			
+	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)
 
 def make_operator (rule):
 	name = rule[0]
@@ -66,17 +89,16 @@ def make_operator (rule):
 				if curr_requirement_count < amount_needed:
 					return False
 
-		if produces:
-			for item, amount_needed in produces.items():
-				current_amount = getattr(state, item, 0)[ID]
-				setattr(state, item, {ID: current_amount + amount_needed})
-
 		if consumes:
 			for item, amount_needed in consumes.items():
 				current_amount = getattr(state, item, None)[ID]
-				if current_amount is None or current_amount > amount_needed:
+				if amount_needed > current_amount:
 					return False
 				setattr(state, item, {ID: current_amount - amount_needed})
+
+		for item, amount_produced in produces.items():
+			current_amount = getattr(state, item, 0)[ID]
+			setattr(state, item, {ID: current_amount + amount_produced})
 
 		return state
 
