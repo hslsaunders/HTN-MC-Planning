@@ -27,29 +27,48 @@ def declare_methods (data):
 	# sort the recipes so that faster recipes go first
 
 	# your code here
-	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)	
-	pass			
+	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)
+	pass
 
 def make_operator (rule):
 	def operator (state, ID):
 		# your code here
-		pass
+		#__name__ = "op_%s" %rule[0]
+
+		if rule["Produces"]:
+			produce = rule["Produces"]
+			setattr(state, produce.keys(), produce.values())
+
+		if rule["Consumes"]:
+			consume = rule["Consumes"]
+			if consume[1]:
+				setattr(state, consume[1].keys(), -1 * consume[1].values())
+			if consume[2]:
+				setattr(state, consume[2].keys(), -1 * consume[2].values())
+
+		state.time -= rule["Time"]
+		return state
 	return operator
 
 def declare_operators (data):
 	# your code here
 	operators = []
-	recipes =  data["Recipes"]
+	recipes = data["Recipes"]
 	for recipe_name in recipes:
 		items = recipes[recipe_name]
 		operators.append(make_operator(items))
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
 	pyhop.declare_operators(operators)
+	print(operators)
+	'''print("Recipes")
+	for item in data["Recipes"].items():
+		print(item)
+		print("name" + item[0])'''
 	pass
 
 def add_heuristic (data, ID):
 	# prune search branch if heuristic() returns True
-	# do not change parameters to heuristic(), but can add more heuristic functions with the same parameters: 
+	# do not change parameters to heuristic(), but can add more heuristic functions with the same parameters:
 	# e.g. def heuristic2(...); pyhop.add_check(heuristic2)
 	def heuristic (state, curr_task, tasks, plan, depth, calling_stack):
 		# your code here
@@ -96,7 +115,7 @@ if __name__ == '__main__':
 	# pyhop.print_operators()
 	# pyhop.print_methods()
 
-	# Hint: verbose output can take a long time even if the solution is correct; 
+	# Hint: verbose output can take a long time even if the solution is correct;
 	# try verbose=1 if it is taking too long
 	pyhop.pyhop(state, goals, verbose=3)
 	# pyhop.pyhop(state, [('have_enough', 'agent', 'cart', 1),('have_enough', 'agent', 'rail', 20)], verbose=3)
